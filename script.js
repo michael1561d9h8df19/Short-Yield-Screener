@@ -64,11 +64,10 @@ async function go() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                // GROUNDING: This forces the AI to use Google Search for the answer
-                tools: [{ google_search: {} }],
+                // REMOVED: tools: [{ google_search: {} }] to avoid quota errors
                 generationConfig: { 
                     responseMimeType: "application/json",
-                    temperature: 0.0 // ZERO temperature for absolute factual rigidity
+                    temperature: 0.0
                 }
             })
         });
