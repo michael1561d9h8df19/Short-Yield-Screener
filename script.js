@@ -1,48 +1,18 @@
-const STORAGE_KEY = 'gemini_api_key';
-const MODEL = 'gemini-1.5-flash';
-let activeCrit = new Set();
-let watchlist = [];
-
-// Initialize
-window.onload = () => {
-    const key = localStorage.getItem(STORAGE_KEY);
-    if(key) updateStatus(true);
-    else openModal();
-};
-
-function updateStatus(live) {
-    document.getElementById('statusDot').className = 'status-dot' + (live ? ' live' : '');
-    document.getElementById('statusLabel').textContent = live ? 'CONNECTED' : 'NO API KEY';
-}
-
-function openModal() { document.getElementById('overlay').classList.remove('hidden'); }
-function closeModal() { document.getElementById('overlay').classList.add('hidden'); }
-
-function saveKey() {
-    const val = document.getElementById('keyInput').value.trim();
-    if (val) {
-        localStorage.setItem(STORAGE_KEY, val);
-        updateStatus(true);
-        closeModal();
-    }
-}
-
-function tc(btn, text) {
-    activeCrit.has(text) ? activeCrit.delete(text) : activeCrit.add(text);
-    btn.classList.toggle('on');
-}
-
-function qs(q) { document.getElementById('qi').value = q; go(); }
-
 async function go() {
     const key = localStorage.getItem(STORAGE_KEY);
     if (!key) return openModal();
 
     const query = document.getElementById('qi').value;
     const resultsContainer = document.getElementById('results');
+    const btn = document.getElementById('runBtn');
+    
     resultsContainer.innerHTML = '<div class="loading">Analyzing Markets...</div>';
+    btn.disabled = true;
 
-    const systemPrompt = `Return JSON only. Screen for: ${query}. Required: ${[...activeCrit].join(', ')}. 
+    // We add a more specific instruction to avoid safety triggers
+    const systemPrompt = `You are a data assistant. Return JSON only. 
+    Search for current 2026 market data for: ${query}. 
+    Required filters: ${[...activeCrit].join(', ')}. 
     Format: {"securities":[{"ticker":"TICKER","name":"Name","type":"etf|equity","yield":"X.X%","summary":"...","stats":[{"label":"PE","value":"15","tone":"pos"}]}]}`;
 
     try {
@@ -51,52 +21,41 @@ async function go() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 contents: [{ parts: [{ text: systemPrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 0.1 // Lower temperature for more stable JSON
+                }
             })
         });
 
         const data = await response.json();
+
+        // CHECK 1: Did the API return an error (like Invalid Key)?
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        // CHECK 2: Did the API refuse to answer (Safety/Blocked)?
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error("The AI blocked this request. Try phrasing it differently (e.g., 'Search for ticker data for...')");
+        }
+
         const result = JSON.parse(data.candidates[0].content.parts[0].text);
-        renderResults(result.securities);
+        
+        if (!result.securities || result.securities.length === 0) {
+            resultsContainer.innerHTML = `<div class="err">No securities found matching those criteria.</div>`;
+        } else {
+            renderResults(result.securities);
+        }
+
     } catch (err) {
-        resultsContainer.innerHTML = `<div class="err">Error: ${err.message}</div>`;
+        console.error(err);
+        resultsContainer.innerHTML = `
+            <div class="err">
+                <div class="err-label">Terminal Error</div>
+                ${err.message}
+            </div>`;
+    } finally {
+        btn.disabled = false;
     }
 }
-
-function renderResults(securities) {
-    const container = document.getElementById('results');
-    container.innerHTML = securities.map(s => `
-        <div class="sec-card">
-            <div>
-                <div class="sec-ticker">${s.ticker}</div>
-                <div class="sec-name">${s.name}</div>
-                <div class="sec-badge b-${s.type}">${s.type}</div>
-                <div class="sec-summary">${s.summary}</div>
-                <button class="pin-btn" onclick="addToWatchlist('${s.ticker}', '${s.yield}')">📌 Pin to Watchlist</button>
-            </div>
-            <div class="sec-stats">
-                <div class="stat-row"><span class="stat-lbl">Yield</span><span class="stat-val hi">${s.yield}</span></div>
-                ${s.stats.map(st => `<div class="stat-row"><span>${st.label}</span><span class="stat-val">${st.value}</span></div>`).join('')}
-            </div>
-        </div>
-    `).join('');
-}
-
-function addToWatchlist(ticker, yieldVal) {
-    if(!watchlist.some(i => i.ticker === ticker)) {
-        watchlist.push({ticker, yieldVal});
-        renderWatchlist();
-    }
-}
-
-function renderWatchlist() {
-    const container = document.getElementById('watchlistItems');
-    container.innerHTML = watchlist.map(i => `
-        <div class="watch-card">
-            <span style="color:var(--amber)">${i.ticker}</span>
-            <span style="float:right">${i.yieldVal}</span>
-        </div>
-    `).join('');
-}
-
-function clearWatchlist() { watchlist = []; renderWatchlist(); }
