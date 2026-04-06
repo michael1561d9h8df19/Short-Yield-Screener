@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investment Terminal | AI Screener</title>
+    <title>Investment Terminal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,13 +11,12 @@
         <div class="topbar">
             <div class="brand">
                 <div class="brand-mark">IS</div>
-                <span class="brand-name">Screener</span>
-                <span class="brand-tag">Gemini · Live Data</span>
+                <span class="brand-name">Terminal</span>
             </div>
             <div class="topbar-right">
-                <div style="display:flex;align-items:center;gap:6px;">
+                <div class="status-group">
                     <div class="status-dot" id="statusDot"></div>
-                    <span class="status-label" id="statusLabel">NO API KEY</span>
+                    <span class="status-label" id="statusLabel">OFFLINE</span>
                 </div>
                 <button class="key-btn" onclick="openModal()">⚙ API Key</button>
             </div>
@@ -25,66 +24,44 @@
 
         <div class="workspace">
             <div class="sidebar">
-                <div>
-                    <div class="s-label">Quick Screens</div>
-                    <div id="quickList" class="quick-list">
-                        <button class="qs-btn" onclick="qs('Short-term high yield bonds: maturity < 3yr, yield > 5.5%')">
-                            <span class="qs-title">⚡ High Yield Short</span>
-                            <span class="qs-sub">Mat <3yr · Yield >5.5%</span>
-                        </button>
-                        <button class="qs-btn" onclick="qs('Dividend growth equities: yield > 3%, payout < 60%')">
-                            <span class="qs-title">📈 Dividend Growth</span>
-                            <span class="qs-sub">Yield >3% · Quality</span>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <div class="s-label">Strict Criteria</div>
-                    <div class="crit-grid">
-                        <button class="crit-tag" onclick="tc(this,'investment grade only')">IG Only</button>
-                        <button class="crit-tag" onclick="tc(this,'ETF only')">ETF Only</button>
-                        <button class="crit-tag" onclick="tc(this,'yield > 5.5%')">Yield > 5.5%</button>
-                    </div>
+                <div class="s-label">Quick Screens</div>
+                <div class="quick-list">
+                    <button class="qs-btn" onclick="qs('Short-term Treasury yields and T-bill ETFs')">⚡ Treasuries</button>
+                    <button class="qs-btn" onclick="qs('High dividend yield Blue Chip stocks')">📈 Dividends</button>
                 </div>
             </div>
 
             <div class="main">
                 <div class="query-bar">
                     <div class="q-wrap">
-                        <span class="q-caret">›</span>
                         <input type="text" id="qi" placeholder="Search markets..." onkeydown="if(event.key==='Enter')go()">
                     </div>
-                    <button class="run-btn" id="runBtn" onclick="go()">Screen ↵</button>
+                    <button class="run-btn" id="runBtn" onclick="go()">Screen</button>
                 </div>
                 <div class="results" id="results">
                     <div class="welcome">
-                        <div class="welcome-title">Your Investment Terminal</div>
-                        <div class="welcome-sub">Enter your Gemini API key to begin real-time market screening.</div>
+                        <h1>Terminal Ready</h1>
+                        <p>Click the gear icon to add your Gemini API Key.</p>
                     </div>
                 </div>
             </div>
 
             <div class="watchlist-panel">
-                <div class="s-label">Pinned Assets</div>
-                <div id="watchlistItems" class="watchlist-list">
-                    <div class="empty-msg">No items pinned.</div>
-                </div>
-                <div class="watchlist-footer">
-                    <button class="key-btn" style="width:100%" onclick="clearWatchlist()">Clear Watchlist</button>
-                </div>
+                <div class="s-label">Pinned</div>
+                <div id="watchlistItems"></div>
             </div>
         </div>
     </div>
 
     <div class="overlay hidden" id="overlay">
         <div class="modal">
-            <div class="modal-title">API Configuration</div>
-            <p class="modal-sub">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
-            <div class="modal-row">
-                <input type="password" id="keyInput" placeholder="Paste AIza... key here">
-                <button class="save-btn" onclick="saveKey()">Save</button>
+            <h3>API Configuration</h3>
+            <p style="font-size:12px; color:gray; margin:10px 0;">Paste your Gemini key below:</p>
+            <input type="password" id="keyInput" placeholder="AIzaSy...">
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="run-btn" onclick="saveKey()">Save Key</button>
+                <button class="key-btn" onclick="closeModal()">Cancel</button>
             </div>
-            <button class="key-btn" style="margin-top:15px" onclick="closeModal()">Close</button>
         </div>
     </div>
 
