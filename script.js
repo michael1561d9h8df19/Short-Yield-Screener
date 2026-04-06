@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'gemini_api_key';
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-1.5-flash';
 
 window.onload = () => {
     const savedKey = localStorage.getItem(STORAGE_KEY);
