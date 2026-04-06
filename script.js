@@ -1,61 +1,75 @@
+const STORAGE_KEY = 'gemini_api_key';
+const MODEL = 'gemini-1.5-flash';
+
+window.onload = () => {
+    const savedKey = localStorage.getItem(STORAGE_KEY);
+    if (savedKey) {
+        updateStatus(true);
+    } else {
+        openModal();
+    }
+};
+
+function updateStatus(live) {
+    document.getElementById('statusDot').classList.toggle('live', live);
+    document.getElementById('statusLabel').textContent = live ? 'CONNECTED' : 'NO API KEY';
+}
+
+function openModal() { document.getElementById('overlay').classList.remove('hidden'); }
+function closeModal() { document.getElementById('overlay').classList.add('hidden'); }
+
+function saveKey() {
+    const val = document.getElementById('keyInput').value.trim();
+    if (val) {
+        localStorage.setItem(STORAGE_KEY, val);
+        updateStatus(true);
+        closeModal();
+    }
+}
+
+function qs(text) {
+    document.getElementById('qi').value = text;
+    go();
+}
+
 async function go() {
     const key = localStorage.getItem(STORAGE_KEY);
     if (!key) return openModal();
 
-    const query = document.getElementById('qi').value;
-    const resultsContainer = document.getElementById('results');
-    const btn = document.getElementById('runBtn');
-    
-    resultsContainer.innerHTML = '<div class="loading">Analyzing Markets...</div>';
-    btn.disabled = true;
+    const input = document.getElementById('qi').value;
+    const container = document.getElementById('results');
+    container.innerHTML = '<p>Accessing Terminal...</p>';
 
-    // We add a more specific instruction to avoid safety triggers
-    const systemPrompt = `You are a data assistant. Return JSON only. 
-    Search for current 2026 market data for: ${query}. 
-    Required filters: ${[...activeCrit].join(', ')}. 
-    Format: {"securities":[{"ticker":"TICKER","name":"Name","type":"etf|equity","yield":"X.X%","summary":"...","stats":[{"label":"PE","value":"15","tone":"pos"}]}]}`;
+    const prompt = `Return a JSON object only. Screen for: ${input}. 
+    Format: {"securities":[{"ticker":"ABC","name":"Name","yield":"5%","summary":"..."}]}`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                contents: [{ parts: [{ text: systemPrompt }] }],
-                generationConfig: { 
-                    responseMimeType: "application/json",
-                    temperature: 0.1 // Lower temperature for more stable JSON
-                }
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
             })
         });
 
         const data = await response.json();
-
-        // CHECK 1: Did the API return an error (like Invalid Key)?
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        // CHECK 2: Did the API refuse to answer (Safety/Blocked)?
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error("The AI blocked this request. Try phrasing it differently (e.g., 'Search for ticker data for...')");
-        }
-
-        const result = JSON.parse(data.candidates[0].content.parts[0].text);
         
-        if (!result.securities || result.securities.length === 0) {
-            resultsContainer.innerHTML = `<div class="err">No securities found matching those criteria.</div>`;
-        } else {
-            renderResults(result.securities);
-        }
+        if (data.error) throw new Error(data.error.message);
 
-    } catch (err) {
-        console.error(err);
-        resultsContainer.innerHTML = `
-            <div class="err">
-                <div class="err-label">Terminal Error</div>
-                ${err.message}
-            </div>`;
-    } finally {
-        btn.disabled = false;
+        const text = data.candidates[0].content.parts[0].text;
+        const result = JSON.parse(text);
+
+        container.innerHTML = result.securities.map(s => `
+            <div class="sec-card">
+                <div class="sec-ticker">${s.ticker}</div>
+                <div style="font-size:12px; color:gray;">${s.name}</div>
+                <div style="color:var(--amber); margin:10px 0;">Yield: ${s.yield}</div>
+                <div style="font-size:11px; line-height:1.5;">${s.summary}</div>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        container.innerHTML = `<div class="err">ERROR: ${e.message}</div>`;
     }
 }
