@@ -1,5 +1,4 @@
 const STORAGE_KEY = 'gemini_api_key';
-// Use 'gemini-flash-latest' to always point to the most recent stable model
 const MODEL = 'gemini-flash-latest';
 
 window.onload = () => {
@@ -18,13 +17,8 @@ function updateStatus(live) {
     if (label) label.textContent = live ? 'CONNECTED' : 'OFFLINE';
 }
 
-function openModal() { 
-    document.getElementById('overlay').classList.remove('hidden'); 
-}
-
-function closeModal() { 
-    document.getElementById('overlay').classList.add('hidden'); 
-}
+function openModal() { document.getElementById('overlay').classList.remove('hidden'); }
+function closeModal() { document.getElementById('overlay').classList.add('hidden'); }
 
 function saveKey() {
     const val = document.getElementById('keyInput').value.trim();
@@ -46,22 +40,22 @@ async function go() {
 
     const input = document.getElementById('qi').value;
     const container = document.getElementById('results');
-    container.innerHTML = '<div class="loading">Accessing Market Data (April 2026)...</div>';
+    container.innerHTML = '<div class="loading">Searching LIVE Market Data (April 2026)...</div>';
 
-    // Analyst-Grade Prompt: Forces strict date checking and specific fixed-income metrics
+    // The Prompt: Forces the AI to verify the specific date and specific yield types.
     const prompt = `
-        TASK: Act as a senior credit analyst. Provide current financial data as of April 6, 2026.
-        SEARCH FOCUS: ${input}.
+        TASK: Act as a senior credit analyst. Provide current financial data as of today, April 6, 2026.
+        USER QUERY: ${input}.
         
-        STRICT DATA RULES:
-        1. Only use data from April 2026. DISCARD all 2024 or 2025 data.
+        DATA INTEGRITY RULES:
+        1. Use ONLY April 2026 data. If you find 2024 or 2025 results, IGNORE THEM.
         2. For ETFs: Provide '30-Day SEC Yield' and 'Yield-to-Worst (YTW)'.
-        3. For Treasuries: Provide current daily market yields.
-        4. Logic Check: Ensure 2-year and 10-year yields reflect current curve (approx 3.8% and 4.3% respectively).
+        3. For Treasuries: Provide the current daily market yield (Today's benchmark is ~3.85% for 2yr and ~4.33% for 10yr).
+        4. Cross-verify the 'Muni-to-Treasury' ratio if requested (~71-72%).
         
         FORMAT: Return ONLY a JSON object:
         {"securities":[
-            {"ticker":"TICKER","name":"Full Name","yield":"0.00% YTW","summary":"Brief credit profile with April 2026 verification."}
+            {"ticker":"TICKER","name":"Full Name","yield":"0.00% SEC / 0.00% YTW","summary":"Brief profile + Date Verified."}
         ]}`;
 
     try {
@@ -70,9 +64,11 @@ async function go() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
+                // GROUNDING: This forces the AI to use Google Search for the answer
+                tools: [{ google_search: {} }],
                 generationConfig: { 
                     responseMimeType: "application/json",
-                    temperature: 0.1 // Lower temperature for higher factual accuracy
+                    temperature: 0.0 // ZERO temperature for absolute factual rigidity
                 }
             })
         });
@@ -83,13 +79,11 @@ async function go() {
             throw new Error(data.error.message);
         }
 
-        const text = data.candidates[0].content.parts[0].text;
+        // The AI with grounding might return the JSON inside markdown blocks
+        let text = data.candidates[0].content.parts[0].text;
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        
         const result = JSON.parse(text);
-
-        if (!result.securities || result.securities.length === 0) {
-            container.innerHTML = '<div class="err">No matching securities found for this criteria.</div>';
-            return;
-        }
 
         container.innerHTML = result.securities.map(s => `
             <div class="sec-card">
@@ -105,9 +99,8 @@ async function go() {
     } catch (e) {
         container.innerHTML = `
             <div class="err">
-                <strong>TERMINAL ERROR:</strong><br>
-                ${e.message}<br><br>
-                <small>Tip: If "prepayment" error persists, ensure billing is disabled in Google Cloud Console to force the Free Tier.</small>
+                <strong>DATA ERROR:</strong><br>${e.message}<br><br>
+                <small>Tip: If Grounding fails, check if your API Key is on the "Free Tier" in AI Studio.</small>
             </div>`;
     }
 }
