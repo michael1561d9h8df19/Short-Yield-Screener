@@ -3,86 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Alpha Terminal | April 2026</title>
+    <title>Professional Alpha Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0a0a0a; --panel: #141414; --text: #e0e0e0; --amber: #ffb400; --green: #00ff41; --border: #333; }
-        body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; margin: 0; padding: 20px; overflow-x: hidden; }
         .terminal-container { max-width: 1200px; margin: 0 auto; }
-        h2 { color: var(--amber); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.2rem; text-transform: uppercase; margin-top: 0; }
+        h2 { color: var(--amber); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1rem; text-transform: uppercase; margin: 0 0 15px 0; }
         
-        /* Dashboard Layout */
-        .dashboard-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 40px; }
-        .panel { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 4px; position: relative; }
+        .dashboard-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 4px; }
         
-        /* UI Components */
-        input { background: #000; border: 1px solid var(--border); color: var(--green); padding: 12px; width: calc(100% - 26px); margin-bottom: 15px; outline: none; font-family: inherit; }
-        button { background: #1e1e1e; border: 1px solid var(--border); color: var(--green); padding: 10px 20px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        input { background: #000; border: 1px solid var(--border); color: var(--green); padding: 12px; width: calc(100% - 26px); margin-bottom: 10px; outline: none; font-family: inherit; }
+        button { background: #1e1e1e; border: 1px solid var(--border); color: var(--green); padding: 10px 15px; cursor: pointer; transition: 0.2s; font-size: 11px; font-weight: bold; }
         button:hover { background: var(--green); color: #000; }
         
-        .sec-card { background: #000; border-left: 3px solid var(--amber); padding: 15px; margin-top: 10px; font-size: 12px; border-radius: 2px; }
-        .news-item { margin-bottom: 18px; border-bottom: 1px solid #222; padding-bottom: 12px; font-size: 11px; line-height: 1.5; color: #bbb; }
-        .news-item strong { color: var(--green); display: block; margin-bottom: 4px; }
+        .sec-card { background: #000; border-left: 3px solid var(--amber); padding: 12px; margin-top: 10px; font-size: 12px; }
+        .news-item { margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; font-size: 11px; color: #bbb; }
         
-        /* Modal Overlay */
-        .hidden { display: none !important; }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-box { background: var(--panel); padding: 40px; border: 1px solid var(--border); text-align: center; min-width: 350px; }
-        
-        #status-bar { font-size: 10px; color: #666; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        .modal-box { background: var(--panel); padding: 40px; border: 1px solid var(--border); text-align: center; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div id="overlay" class="hidden">
+    <div id="overlay">
         <div class="modal-box">
-            <h3 style="color:var(--text); margin-top:0;">ENTER API KEY</h3>
-            <p style="font-size:10px; color:#888; margin-bottom:20px;">KEY IS STORED LOCALLY IN BROWSER ONLY</p>
-            <input type="password" id="keyInput" placeholder="Paste Gemini Key here...">
+            <h3 style="margin:0 0 20px 0;">SYSTEM ACCESS REQUIRED</h3>
+            <input type="password" id="keyInput" placeholder="Paste Gemini API Key...">
             <br>
-            <button onclick="saveKey()">CONNECT TERMINAL</button>
+            <button onclick="saveKey()">ESTABLISH CONNECTION</button>
         </div>
     </div>
 
     <div class="terminal-container">
-        <div id="status-bar">
-            <span>SYSTEM: ONLINE</span>
-            <span>DATE: APRIL 10, 2026</span>
-            <span id="key-status" style="color:var(--green)">KEY: DETECTED</span>
+        <div style="font-size: 10px; color: #555; margin-bottom: 15px; display: flex; justify-content: space-between;">
+            <span>SENSITIVE DATA - APRIL 10, 2026</span>
+            <span id="conn-status">STATUS: OFFLINE</span>
         </div>
 
         <section class="panel" style="margin-bottom:20px;">
-            <h2>📉 Fixed Income Terminal</h2>
-            <div style="margin-bottom:15px; display:flex; gap:10px;">
-                <button onclick="qs('Yield Curve Summary')">📈 Yield Curve</button>
-                <button onclick="qs('SPSB vs MUB Relative Value')">⚖️ Corp vs Muni</button>
-                <button onclick="qs('Top Short Term Muni ETFs')">🏥 Muni Screen</button>
+            <h2>📉 Fixed Income Desk</h2>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button onclick="qs('Yield Curve Summary')">YIELD CURVE</button>
+                <button onclick="qs('SPSB vs MUB Relative Value')">CORP VS MUNI</button>
             </div>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="qi" placeholder="Command (e.g. 'Compare 2yr vs 10yr spread')..." style="margin-bottom:0;">
-                <button onclick="go()" style="flex-shrink:0;">EXECUTE</button>
+                <input type="text" id="qi" placeholder="Command..." style="margin-bottom:0;">
+                <button onclick="go()">EXECUTE</button>
             </div>
-            <div id="results" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;"></div>
+            <div id="results" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;"></div>
         </section>
 
         <div class="dashboard-grid">
             <div class="panel">
                 <h2>🏢 Equity Workstation</h2>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="eqInput" placeholder="Enter Ticker (NVDA, AAPL)..." style="margin-bottom:0;">
+                    <input type="text" id="eqInput" placeholder="Ticker..." style="margin-bottom:0;">
                     <button onclick="runEquityScreen()">ANALYZE</button>
                 </div>
-                <div style="margin-top:25px; height: 300px;">
+                <div style="height: 250px; margin-top: 20px;">
                     <canvas id="equityChart"></canvas>
                 </div>
             </div>
-
-            <div class="panel" style="max-height: 500px; overflow-y: auto;">
-                <h2>📰 Global Macro News</h2>
-                <div id="news-content">Initialising news stream...</div>
+            <div class="panel">
+                <h2>📰 Macro Feed</h2>
+                <div id="news-content" style="max-height: 350px; overflow-y: auto;">Waiting for connection...</div>
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
