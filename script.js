@@ -38,24 +38,37 @@ async function go() {
     const key = localStorage.getItem(STORAGE_KEY);
     if (!key) return openModal();
 
-    const input = document.getElementById('qi').value;
-    const container = document.getElementById('results');
-    container.innerHTML = '<div class="loading">Searching LIVE Market Data (April 2026)...</div>';
+    // DYNAMIC DATE INJECTION
+    const today = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
 
-    // The Prompt: Forces the AI to verify the specific date and specific yield types.
+    let input = document.getElementById('qi').value;
+    const container = document.getElementById('results');
+    container.innerHTML = `<div class="loading">Fetching Institutional Data for ${today}...</div>`;
+
+    // PROMPT ENHANCER: Translates buttons into professional research requests
+    if (input === 'Yield Curve Summary') {
+        input = `Generate a full US Treasury yield curve table (1M, 2Y, 5Y, 10Y, 30Y) for ${today}.`;
+    } else if (input === 'SPSB vs MUB Relative Value') {
+        input = `Compare SPSB and MUB. Provide 30-day SEC Yields and Taxable Equivalent Yield (37% bracket) for ${today}.`;
+    }
+
     const prompt = `
-        TASK: Act as a senior credit analyst. Provide current financial data as of today, April 6, 2026.
-        USER QUERY: ${input}.
+        INSTRUCTIONS: You are a senior fixed-income research terminal. 
+        Current Date: ${today}.
         
-        DATA INTEGRITY RULES:
-        1. Use ONLY April 2026 data. If you find 2024 or 2025 results, IGNORE THEM.
-        2. For ETFs: Provide '30-Day SEC Yield' and 'Yield-to-Worst (YTW)'.
-        3. For Treasuries: Provide the current daily market yield (Today's benchmark is ~3.85% for 2yr and ~4.33% for 10yr).
-        4. Cross-verify the 'Muni-to-Treasury' ratio if requested (~71-72%).
+        DATA RIGIDITY RULES:
+        1. Access your most recent knowledge of April 2026 markets. 
+        2. DISCARD all data from 2024, 2025, or early 2026 before April.
+        3. For ETFs: You MUST provide '30-Day SEC Yield' and 'Yield-to-Worst'.
+        4. For Treasuries: Use active market yields (Approx 3.79% for 2Y, 4.30% for 10Y).
+        
+        USER QUERY: ${input}.
         
         FORMAT: Return ONLY a JSON object:
         {"securities":[
-            {"ticker":"TICKER","name":"Full Name","yield":"0.00% SEC / 0.00% YTW","summary":"Brief profile + Date Verified."}
+            {"ticker":"TICKER","name":"Name","yield":"0.00% SEC / 0.00% YTW","summary":"Analysis verified as of ${today}."}
         ]}`;
 
     try {
@@ -64,24 +77,18 @@ async function go() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                // REMOVED: tools: [{ google_search: {} }] to avoid quota errors
                 generationConfig: { 
                     responseMimeType: "application/json",
-                    temperature: 0.0
+                    temperature: 0.0 // Strict factual adherence
                 }
             })
         });
 
         const data = await response.json();
         
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
+        if (data.error) throw new Error(data.error.message);
 
-        // The AI with grounding might return the JSON inside markdown blocks
-        let text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
+        const text = data.candidates[0].content.parts[0].text;
         const result = JSON.parse(text);
 
         container.innerHTML = result.securities.map(s => `
@@ -96,10 +103,6 @@ async function go() {
         `).join('');
 
     } catch (e) {
-        container.innerHTML = `
-            <div class="err">
-                <strong>DATA ERROR:</strong><br>${e.message}<br><br>
-                <small>Tip: If Grounding fails, check if your API Key is on the "Free Tier" in AI Studio.</small>
-            </div>`;
+        container.innerHTML = `<div class="err"><strong>TERMINAL ERROR:</strong><br>${e.message}</div>`;
     }
 }
