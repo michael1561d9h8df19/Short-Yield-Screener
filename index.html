@@ -3,135 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Alpha Terminal | Equity & Credit</title>
+    <title>Professional Alpha Terminal</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { 
-            --bg: #0a0a0a; 
-            --panel: #141414; 
-            --text: #e0e0e0; 
-            --amber: #ffb400; 
-            --green: #00ff41; 
-            --border: #333; 
-        }
-        
-        body { 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: 'Courier New', monospace; 
-            margin: 0; 
-            padding: 20px; 
-            overflow-x: hidden; 
-        }
-
+        :root { --bg: #0a0a0a; --panel: #141414; --text: #e0e0e0; --amber: #ffb400; --green: #00ff41; --border: #333; }
+        body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; margin: 0; padding: 20px; overflow-x: hidden; }
         .terminal-container { max-width: 1200px; margin: 0 auto; }
-        
-        h2 { 
-            color: var(--amber); 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 10px; 
-            font-size: 1rem; 
-            text-transform: uppercase; 
-            margin: 0 0 15px 0; 
-        }
-        
-        /* Layout Sections */
-        .dashboard-grid { 
-            display: grid; 
-            grid-template-columns: 1.2fr 0.8fr; 
-            gap: 20px; 
-            margin-bottom: 20px; 
-        }
-        
-        .panel { 
-            background: var(--panel); 
-            border: 1px solid var(--border); 
-            padding: 20px; 
-            border-radius: 4px; 
-        }
-        
-        /* Inputs and Buttons */
-        input { 
-            background: #000; 
-            border: 1px solid var(--border); 
-            color: var(--green); 
-            padding: 12px; 
-            width: calc(100% - 26px); 
-            margin-bottom: 10px; 
-            outline: none; 
-            font-family: inherit; 
-        }
-
-        button { 
-            background: #1e1e1e; 
-            border: 1px solid var(--border); 
-            color: var(--green); 
-            padding: 10px 15px; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            font-size: 11px; 
-            font-weight: bold; 
-            text-transform: uppercase;
-        }
-
-        button:hover { 
-            background: var(--green); 
-            color: #000; 
-        }
-        
-        /* Result Cards */
-        .sec-card { 
-            background: #000; 
-            border-left: 3px solid var(--amber); 
-            padding: 12px; 
-            margin-top: 10px; 
-            font-size: 12px; 
-            line-height: 1.4;
-        }
-
-        .news-item { 
-            margin-bottom: 15px; 
-            border-bottom: 1px solid #222; 
-            padding-bottom: 10px; 
-            font-size: 11px; 
-            color: #bbb; 
-        }
-
-        /* Access Overlay */
-        #overlay { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 1000; 
-        }
-
-        .modal-box { 
-            background: var(--panel); 
-            padding: 40px; 
-            border: 1px solid var(--border); 
-            text-align: center; 
-        }
-
+        h2 { color: var(--amber); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1rem; text-transform: uppercase; margin: 0 0 15px 0; }
+        .dashboard-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 4px; }
+        input { background: #000; border: 1px solid var(--border); color: var(--green); padding: 12px; width: calc(100% - 26px); margin-bottom: 10px; outline: none; font-family: inherit; }
+        button { background: #1e1e1e; border: 1px solid var(--border); color: var(--green); padding: 10px 15px; cursor: pointer; transition: 0.2s; font-size: 11px; font-weight: bold; }
+        button:hover { background: var(--green); color: #000; }
+        .sec-card { background: #000; border-left: 3px solid var(--amber); padding: 12px; margin-top: 10px; font-size: 12px; }
+        .news-item { margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; font-size: 11px; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-box { background: var(--panel); padding: 40px; border: 1px solid var(--border); text-align: center; }
         .hidden { display: none !important; }
-
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; }
     </style>
 </head>
 <body>
     <div id="overlay">
         <div class="modal-box">
-            <h3 style="margin:0 0 20px 0; color:var(--text);">SYSTEM ACCESS REQUIRED</h3>
-            <p style="font-size:11px; color:#666; margin-bottom:20px;">AUTHORIZE BROWSER FOR APRIL 2026 MARKET DATA</p>
-            <input type="password" id="keyInput" placeholder="Enter Gemini API Key...">
+            <h3 style="margin:0 0 20px 0;">SYSTEM ACCESS REQUIRED</h3>
+            <input type="password" id="keyInput" placeholder="Paste Gemini API Key...">
             <br>
             <button onclick="saveKey()">ESTABLISH CONNECTION</button>
         </div>
@@ -139,7 +34,7 @@
 
     <div class="terminal-container">
         <div style="font-size: 10px; color: #555; margin-bottom: 15px; display: flex; justify-content: space-between;">
-            <span>ENCRYPTED TERMINAL - JERSEY CITY NODE</span>
+            <span>SENSITIVE DATA - APRIL 13, 2026</span>
             <span id="conn-status">STATUS: OFFLINE</span>
         </div>
 
@@ -151,8 +46,8 @@
                 <button onclick="qs('Screen for 3 semi stocks leading in AI software and 2nm production for April 2026. Compare P/E vs 2024 levels.')">💎 SEMI SCREEN</button>
             </div>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="qi" placeholder="Paste semi-conductor prompt or command here..." style="margin-bottom:0;">
-                <button onclick="go()">EXECUTE SEARCH</button>
+                <input type="text" id="qi" placeholder="Command..." style="margin-bottom:0;">
+                <button onclick="go()">EXECUTE</button>
             </div>
             <div id="results" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;"></div>
         </section>
@@ -161,7 +56,7 @@
             <div class="panel">
                 <h2>🏢 Equity Workstation</h2>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="eqInput" placeholder="Ticker (e.g. NVDA)..." style="margin-bottom:0;">
+                    <input type="text" id="eqInput" placeholder="Ticker..." style="margin-bottom:0;">
                     <button onclick="runEquityScreen()">ANALYZE</button>
                 </div>
                 <div style="height: 250px; margin-top: 20px;">
@@ -170,12 +65,20 @@
             </div>
 
             <div class="panel">
-                <h2>📰 Global Macro Feed</h2>
-                <div id="news-content" style="max-height: 350px; overflow-y: auto;">Establishing data stream...</div>
+                <h2>📡 News Terminals</h2>
+                <div style="display:grid; grid-template-rows: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h3 style="font-size: 10px; color: var(--green); margin: 0 0 10px 0;">🔴 CNBC REAL-TIME</h3>
+                        <div id="cnbc-content" style="max-height: 180px; overflow-y: auto;">Connecting...</div>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 10px; color: var(--amber); margin: 0 0 10px 0;">🤖 AI MACRO ANALYSIS</h3>
+                        <div id="news-content" style="max-height: 180px; overflow-y: auto;">Processing...</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
