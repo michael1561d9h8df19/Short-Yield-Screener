@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'gemini_api_key';
-const MODEL = 'gemini-1.5-flash-latest'; // Updated for April 2026 stability
+const AV_KEY = 'BWJ1JNTXCQPBKSNH'; // Your Active Alpha Vantage Key
+const MODEL = 'gemini-1.5-flash-latest';
 
-// INITIAL LOAD
 window.onload = () => {
     const savedKey = localStorage.getItem(STORAGE_KEY);
     if (savedKey) {
@@ -22,13 +22,15 @@ function saveKey() {
 }
 
 function initDashboard() {
-    fetchNews();
     fetchCNBC();
-    initChart('Benchmark Pulse', [430, 432, 429, 431, 433]);
+    // Delay the AI calls slightly to avoid hitting the 429 rate limit on page load
+    setTimeout(fetchNews, 1000); 
+    initChart('Market Pulse', [430.12, 431.55, 429.80, 432.10, 431.90]);
 }
 
 async function fetchCNBC() {
     const container = document.getElementById('cnbc-content');
+    // Using a reliable RSS-to-JSON bridge
     const rssUrl = 'https://www.cnbc.com/id/100003114/device/rss/rss.html';
     const bridgeUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
@@ -50,7 +52,9 @@ async function fetchCNBC() {
 async function fetchNews() {
     const key = localStorage.getItem(STORAGE_KEY);
     const container = document.getElementById('news-content');
-    const prompt = `Provide 3 headlines for April 13, 2026. Focus: TSM revenue surge, US-Iran ceasefire impact on oil. Format: <div class="news-item"><strong>AI:</strong> [Headlines]</div>`;
+    
+    // Minimalist prompt to save tokens and prevent "Busy" errors
+    const prompt = "April 13, 2026: 3 bullet points on semi-conductor market sentiment. No intro.";
 
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
@@ -59,35 +63,40 @@ async function fetchNews() {
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         const data = await res.json();
-        container.innerHTML = data.candidates[0].content.parts[0].text;
-    } catch (e) { container.innerHTML = "AI Feed Busy."; }
+        
+        if (data.candidates && data.candidates[0].content) {
+            container.innerHTML = `<div class="news-item" style="color:#aaa;">${data.candidates[0].content.parts[0].text}</div>`;
+        } else {
+            container.innerHTML = "AI Macro Feed: Rate Limit Reached.";
+        }
+    } catch (e) { 
+        container.innerHTML = "AI Feed Offline."; 
+    }
 }
 
 async function runEquityScreen() {
     const ticker = document.getElementById('eqInput').value.toUpperCase();
     if(!ticker) return;
 
-    // To use actual prices, replace 'DEMO' with your Alpha Vantage Key
-    const avKey = 'DEMO'; 
-    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${avKey}`;
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${AV_KEY}`;
 
     try {
         const response = await fetch(url);
         const data = await response.json();
         
-        // Check if we got real data or the daily limit message
         if (data["Time Series (5min)"]) {
             const timeSeries = data["Time Series (5min)"];
-            const labels = Object.keys(timeSeries).slice(0, 10).reverse();
+            const labels = Object.keys(timeSeries).slice(0, 15).reverse();
             const prices = labels.map(time => parseFloat(timeSeries[time]["1. open"]));
-            initChart(`${ticker} Real Price`, prices, labels.map(l => l.split(' ')[1]));
+            const shortLabels = labels.map(l => l.split(' ')[1].substring(0, 5));
+            
+            initChart(`${ticker} LIVE (5m)`, prices, shortLabels);
         } else {
-            // Fallback to stylized mock if limit reached
-            const mock = [150, 155, 148, 160, 158];
-            initChart(`${ticker} (Daily Limit Reached)`, mock);
+            alert("Alpha Vantage Limit: 25 requests per day. Showing fallback data.");
+            initChart(`${ticker} (Daily Limit)`, [150, 152, 149, 155, 154]);
         }
     } catch (e) {
-        alert("Feed limit reached.");
+        console.error(e);
     }
 }
 
@@ -97,22 +106,26 @@ function initChart(label, dataPoints, timeLabels) {
     window.myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: timeLabels || ['9:30', '11:00', '1:00', '3:00', '4:00'],
+            labels: timeLabels || ['09:30', '11:00', '13:00', '15:00', '16:00'],
             datasets: [{
                 label: label,
                 data: dataPoints,
                 borderColor: '#00ff41',
                 backgroundColor: 'rgba(0, 255, 65, 0.05)',
                 fill: true,
-                tension: 0.3
+                tension: 0.3,
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { grid: { color: '#222' }, ticks: { color: '#666' } },
-                x: { grid: { color: '#222' }, ticks: { color: '#666' } }
+                y: { grid: { color: '#222' }, ticks: { color: '#666', font: { size: 10 } } },
+                x: { grid: { color: '#222' }, ticks: { color: '#666', font: { size: 10 } } }
+            },
+            plugins: {
+                legend: { labels: { color: '#e0e0e0', font: { family: 'Courier New' } } }
             }
         }
     });
@@ -126,18 +139,38 @@ function qs(text) {
 async function go() {
     const key = localStorage.getItem(STORAGE_KEY);
     const container = document.getElementById('results');
-    container.innerHTML = 'FETCHING DATA...';
+    container.innerHTML = '<div style="color:var(--amber); font-size:11px;">PARSING FINANCIAL DATA...</div>';
 
-    const prompt = `Senior Credit Analyst view. USER REQUEST: ${document.getElementById('qi').value}. Return ONLY JSON: {"securities":[{"ticker":"TICKER","name":"Name","yield":"0.00%","summary":"..."}]}`;
+    // Added a very strict "No Markdown" instruction to prevent Screener errors
+    const prompt = `Task: ${document.getElementById('qi').value}. Return ONLY a JSON object. No words, no backticks. 
+    Format: {"securities":[{"ticker":"TICKER","name":"Name","yield":"0.00%","summary":"..."}]}`;
 
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            })
         });
         const data = await res.json();
-        const result = JSON.parse(data.candidates[0].content.parts[0].text);
-        container.innerHTML = result.securities.map(s => `<div class="sec-card"><strong>${s.ticker}</strong> | ${s.name}<br>Yield: ${s.yield}<br><span style="font-size:10px;">${s.summary}</span></div>`).join('');
-    } catch (e) { container.innerHTML = "Screener error."; }
+        
+        // Safety check for JSON structure
+        if (data.candidates && data.candidates[0].content) {
+            const rawText = data.candidates[0].content.parts[0].text;
+            const result = JSON.parse(rawText);
+            
+            container.innerHTML = result.securities.map(s => `
+                <div class="sec-card">
+                    <strong style="color:var(--amber)">${s.ticker}</strong> | ${s.name}<br>
+                    <span style="color:var(--green)">Yield: ${s.yield}</span><br>
+                    <span style="font-size:10px; color:#aaa;">${s.summary}</span>
+                </div>
+            `).join('');
+        }
+    } catch (e) { 
+        console.error(e);
+        container.innerHTML = "<div class='sec-card'>Screener Busy. Please wait 30s for API cool-down.</div>"; 
+    }
 }
